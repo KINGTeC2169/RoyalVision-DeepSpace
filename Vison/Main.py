@@ -95,10 +95,14 @@ def handleOneRectangle(contour):
         M = cv2.moments(contour)
 
         # calculate x,y coordinate of center
-        cX = int(M["m10"] / M["m00"])
-        cY = int(M["m01"] / M["m00"])
+        x = int(M["m10"] / M["m00"])
+        y = int(M["m01"] / M["m00"])
 
-        cv2.circle(frame, (cX, cY), 5, (255, 255, 255), -1)
+        cent = [x, y]
+
+        cv2.circle(frame, (x, y), 5, (255, 255, 255), -1)
+
+
     else:
         x, y = m.line_intersection(line1, line2)
         cent = [x, y]
@@ -129,9 +133,11 @@ def handleTwoRectangles(contour1, contour2):
     top2, bottom2, cent2, size2, tilt2 = handleOneRectangle(contour2)
     if tilt1 is not Tilt.STRAIGHT and tilt2 is not Tilt.STRAIGHT:
         x, y = m.line_intersection([top1, bottom2], [top2, bottom1])
-        # cv2.circle(frame, (int(x), int(y)), 5, (0, 255, 255), -1)
-        # cv2.line(frame, (0,int(y)), (640, int(y)), (0, 0, 255), 2)
-        # cv2.line(frame, (int(x),0), (int(x), 480), (0, 0, 255), 2)
+        cv2.circle(frame, (int(x), int(y)), 5, (0, 255, 255), -1)
+    else:
+        x = (cent1[0] + cent2[0])/2
+        y = (cent1[1] + cent2[1]) / 2
+        cv2.circle(frame, (int(x), int(y)), 5, (0, 255, 255), -1)
     pass
 
 
