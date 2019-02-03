@@ -17,7 +17,6 @@ class Tilt(Enum):
 
 # Method for 1 visible rectangle.  Accepts 1 contour parameter.
 def handleOneRectangle(contour):
-    cv2.drawContours(frame, contour, -1, (255, 255, 255), 2)
 
     # Set up our return variables
     area = cv2.contourArea(contour)
