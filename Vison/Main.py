@@ -16,7 +16,7 @@ class Tilt(Enum):
 
 
 # Method for 1 visible rectangle.  Accepts 1 contour parameter.
-def handleOneRectangle(contour):
+def calculateRectangle(contour):
 
     # Set up our return variables
     area = cv2.contourArea(contour)
@@ -27,8 +27,6 @@ def handleOneRectangle(contour):
     # Take said bounding rectangle and simplify it onto integer coordinates.
     box = cv2.boxPoints(rect)
     box = np.int0(box)
-
-    cv2.drawContours(frame, [box], -1, (255, 0, 0), 2)
 
     # Check if any of the points on the bounding box fall on the edge of the image.
     # If this is the case, the target is partially off-screen, and indicate to the
@@ -110,18 +108,42 @@ def handleOneRectangle(contour):
     return topPoint, bottomPoint, boundCent, area, boundTilt
 
 
+def handleOneRectangle():
+    pass
+
 # Method for 2 visible rectangles.  Accepts two contour parameters.
 def handleTwoRectangles(contour1, contour2):
-    top1, bottom1, cent1, size1, tilt1 = handleOneRectangle(contour1)
-    top2, bottom2, cent2, size2, tilt2 = handleOneRectangle(contour2)
-    if tilt1 is not Tilt.STRAIGHT and tilt2 is not Tilt.STRAIGHT:
-        x, y = m.line_intersection([top1, bottom2], [top2, bottom1])
-        cv2.circle(frame, (int(x), int(y)), 5, (0, 255, 255), -1)
+    top1, bottom1, cent1, size1, tilt1 = calculateRectangle(contour1)
+    top2, bottom2, cent2, size2, tilt2 = calculateRectangle(contour2)
+
+    rectangles = [contour1, contour2]
+
+    if tilt1 is Tilt.LEFT and cent1[0] > frame.shape[1] or tilt1 is Tilt.RIGHT and cent1[0] < frame.shape[1] \
+            or tilt2 is Tilt.LEFT and cent2[0] > frame.shape[1] or tilt2 is Tilt.RIGHT and cent2[0] < frame.shape[1]:
+            print("Opposing sides!")
+            if size1 != size2:
+                if cent1[0] > cent2[0]:
+                    #One Rectangle Calculations on Rectangle 1
+                    pass
+                else:
+                    # One Rectangle Calculations on Rectangle2
+                    pass
+            else:
+                if size1 > size2:
+                    #One Rectangle Calculations on Rectangle1
+                    pass
+                else:
+                    #One Rectangle Calculations on Rectangle2
+                    pass
     else:
-        x = (cent1[0] + cent2[0]) / 2
-        y = (cent1[1] + cent2[1]) / 2
-        cv2.circle(frame, (int(x), int(y)), 5, (0, 255, 255), -1)
-    pass
+
+        if tilt1 is not Tilt.STRAIGHT and tilt2 is not Tilt.STRAIGHT:
+            x, y = m.line_intersection([top1, bottom2], [top2, bottom1])
+            cv2.circle(frame, (int(x), int(y)), 5, (0, 255, 255), -1)
+        else:
+            x = (cent1[0] + cent2[0]) / 2
+            y = (cent1[1] + cent2[1]) / 2
+            cv2.circle(frame, (int(x), int(y)), 5, (0, 255, 255), -1)
 
 
 if __name__ == '__main__':
@@ -173,7 +195,8 @@ if __name__ == '__main__':
             # Return <0,0>
         elif len(contours) is 1:
             # Feed the handle method the largest contour
-            top, bottom, cent, size, tilt = handleOneRectangle(contours[0])
+            top, bottom, cent, size, tilt = calculateRectangle(contours[0])
+            handleOneRectangle()
         else:
             # Feed the handle method the two largest contours
             handleTwoRectangles(contours[0], contours[1])
