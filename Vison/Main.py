@@ -16,12 +16,11 @@ class Tilt(Enum):
 def handleOneRectangle(contour):
 
     #Set up our return variables
+    top = None
+    bottom = None
+    cent = None
     size = cv2.contourArea(contour)
-    x = None
     tilt = None
-
-    #Predefine this to make Python happy
-    inRangeX = None
 
     try:
 
@@ -51,7 +50,7 @@ def handleOneRectangle(contour):
         # Sort the points by the slope of the line generated between them and (0,0)
         # This will allow us to determine where each point lies on the rectangle for the center-point
         # estimation process that will follow
-        points.sort(key=m.getFirstIndex, reverse=True)
+        points.sort(key=m.getX, reverse=True)
 
         # Create arrays that will hold the points about the lines that connect the corners of the bounding
         # box to estimate the center point
@@ -70,33 +69,38 @@ def handleOneRectangle(contour):
         line2.append(points[1])
         line2.append(points[2])
 
-        if m.getSlopeDuo(points[0], points[3]) < 0:
-            tilt = Tilt.LEFT
-        elif m.getSlopeDuo(points[0], points[3]) > 0:
-            tilt = Tilt.RIGHT
-        else:
+        line1.sort(key=m.getY, reverse=True)
+        top = line1[0]
+        bottom = line1[1]
+
+        slope = m.getSlopeDuo(points[0], points[3])
+        if slope is None or slope is 0:
             tilt = Tilt.STRAIGHT
+        elif slope < 0:
+            tilt = Tilt.LEFT
+        elif slope > 0:
+            tilt = Tilt.RIGHT
+
 
         # Using some basic algebra, find the intersection point of the two lines and return that point
         # to variables x and y respectively
         x, y = m.line_intersection(line1, line2)
-
+        cent = [x, y]
 
         # If system is in debug mode, print and display all of this data.  Otherwise, don't
         # in order to keep loop times as low as possible
         if c.isDebug():
             if c.getDebug() is 1 or c.getDebug() is 3:
                 cv2.line(frame, (points[0][0], points[0][1]), (points[3][0], points[3][1]), (255, 0, 255), 2)
-            if inRangeX:
-                # In range, green center point
                 cv2.circle(frame, (int(x), int(y)), 5, (0, 255, 0), -1)
                 cv2.circle(frame, (points[0][0], points[0][1]), 5, (255, 0, 0), -1)
                 cv2.circle(frame, (points[1][0], points[1][1]), 5, (0, 255, 0), -1)
                 cv2.circle(frame, (points[2][0], points[2][1]), 5, (0, 0, 255), -1)
                 cv2.circle(frame, (points[3][0], points[3][1]), 5, (255, 255, 255), -1)
             else:
+                pass
                 # Out of range, red center point
-                cv2.circle(frame, (int(x), int(y)), 5, (0, 0, 255), -1)
+                # cv2.circle(frame, (int(x), int(y)), 5, (0, 0, 255), -1)
             if c.getDebug() > 1:
                 pass
             cv2.drawContours(frame, [box], 0, (0, 0, 255), 2)
@@ -107,11 +111,17 @@ def handleOneRectangle(contour):
         if c.getDebug() > 1:
             print(err)
 
-    return x, size, tilt
+    return top, bottom, cent, size, tilt
 
 # Method for 2 visible rectangles.  Accepts two contour parameters.
 def handleTwoRectangles(contour1, contour2):
-
+    top1, bottom1, cent1, size1, tilt1 = handleOneRectangle(contour1)
+    top2, bottom2, cent2, size2, tilt2 = handleOneRectangle(contour2)
+    if tilt1 is not Tilt.STRAIGHT and tilt2 is not Tilt.STRAIGHT:
+        x, y = m.line_intersection([top1, bottom2], [top2, bottom1])
+        cv2.circle(frame, (int(x), int(y)), 5, (0, 255, 255), -1)
+        cv2.line(frame, (0,int(y)), (640, int(y)), (0, 0, 255), 2)
+        cv2.line(frame, (int(x),0), (int(x), 480), (0, 0, 255), 2)
     pass
 
 
@@ -129,7 +139,7 @@ if __name__ == '__main__':
     c.readValues()
 
     # Create VideoCapture object to grab frames from the USB Camera as color matrices
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
 
     while True:
 
@@ -163,16 +173,18 @@ if __name__ == '__main__':
         contoursSorted.reverse()
         contours = contoursSorted
 
+        print(len(contours))
         if len(contours) is 0:
             pass
             #Return information telling the system not to move on regard of the lack of rectangles
             # Return <0,0>
         elif len(contours) is 1:
             #Feed the handle method the largest contour
-            x, size, tilt = handleOneRectangle(contours[0])
-            print(x,size,tilt)
+            print("Handling One")
+            top, bottom, cent, size, tilt = handleOneRectangle(contours[0])
         else:
             #Feed the handle method the two largest contours
+            print("Handling Two")
             handleTwoRectangles(contours[0],contours[1])
         # If in debug mode, show the image.  If not, keep this disabled, as it slows down the program
         # significantly

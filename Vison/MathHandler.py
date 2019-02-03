@@ -6,8 +6,11 @@ class MathHandler:
         except:
             return 1000
 
-    def getFirstIndex(self, point):
-        return  point[0]
+    def getX(self, point):
+        return point[0]
+
+    def getY(self, point):
+        return point[1]
 
     def getSlopeDuo(self, first, second):
         try:
@@ -24,7 +27,8 @@ class MathHandler:
 
         div = det(xdiff, ydiff)
         if div == 0:
-            raise Exception('lines do not intersect')
+            return None
+            #raise Exception('lines do not intersect')
 
         d = (det(*line1), det(*line2))
         x = det(d, xdiff) / div
