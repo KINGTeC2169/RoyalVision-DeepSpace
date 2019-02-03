@@ -16,7 +16,8 @@ class MathHandler:
         try:
             return float(first[1] - second[1]) / float(first[0] - second[0])
         except:
-            return 1000
+            print("Fail On Slope Calc")
+            return None
 
     def line_intersection(self, line1, line2):
         xdiff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
@@ -27,8 +28,7 @@ class MathHandler:
 
         div = det(xdiff, ydiff)
         if div == 0:
-            return None
-            #raise Exception('lines do not intersect')
+            return None, None
 
         d = (det(*line1), det(*line2))
         x = det(d, xdiff) / div
