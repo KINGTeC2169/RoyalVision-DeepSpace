@@ -7,23 +7,20 @@ from Constants import Constants
 from Vison.MathHandler import MathHandler
 
 from enum import Enum
+
+#Enum for tilt that clear up need for multiple booleans
 class Tilt(Enum):
     LEFT = 1
     RIGHT = 2
     STRAIGHT = 3
 
+
 # Method for 1 visible rectangle.  Accepts 1 contour parameter.
 def handleOneRectangle(contour):
-
     cv2.drawContours(frame, contour, -1, (255, 255, 255), 2)
 
-
-    #Set up our return variables
-    top = None
-    bottom = None
-    cent = None
-    size = cv2.contourArea(contour)
-    tilt = None
+    # Set up our return variables
+    area = cv2.contourArea(contour)
 
     # Create a bounding rectangle from the largest contour
     rect = cv2.minAreaRect(contour)
@@ -32,20 +29,18 @@ def handleOneRectangle(contour):
     box = cv2.boxPoints(rect)
     box = np.int0(box)
 
-
-    cv2.drawContours(frame, [box], -1, (255,0,0), 2)
+    cv2.drawContours(frame, [box], -1, (255, 0, 0), 2)
 
     # Check if any of the points on the bounding box fall on the edge of the image.
     # If this is the case, the target is partially off-screen, and indicate to the
     # InRange variables that this is the case.
     points: List[Any] = []
 
-
     # OpenCV doesn't register the BoxPoints object as iterable, so this will fire a false warning on
     # PyCharm.  The next line disables that warning.  If you aren't in PyCharm, it won't do anything.
 
-    # noinspection PyTypeChecker
     inRangeX = True
+    # noinspection PyTypeChecker
     for point in box:
         if point[0] <= 0 or point[0] >= frame.shape[1]:
             inRangeX = False
@@ -75,22 +70,22 @@ def handleOneRectangle(contour):
     line2.append(points[2])
 
     line1.sort(key=m.getY, reverse=True)
-    top = line1[0]
-    bottom = line1[1]
+    topPoint = line1[0]
+    bottomPoint = line1[1]
 
     slope = m.getSlopeDuo(points[0], points[3])
     if slope is None or slope is 0.0 or not inRangeX:
-        tilt = Tilt.STRAIGHT
+        boundTilt = Tilt.STRAIGHT
     elif slope < 0:
-        tilt = Tilt.LEFT
+        boundTilt = Tilt.LEFT
     elif slope > 0:
-        tilt = Tilt.RIGHT
+        boundTilt = Tilt.RIGHT
     else:
-        tilt= Tilt.STRAIGHT
+        boundTilt = Tilt.STRAIGHT
 
     # Using some basic algebra, find the intersection point of the two lines and return that point
     # to variables x and y respectively
-    if tilt == Tilt.STRAIGHT:
+    if boundTilt == Tilt.STRAIGHT:
         # calculate moments for each contour
         M = cv2.moments(contour)
 
@@ -98,34 +93,23 @@ def handleOneRectangle(contour):
         x = int(M["m10"] / M["m00"])
         y = int(M["m01"] / M["m00"])
 
-        cent = [x, y]
+        boundCent = [x, y]
 
-        cv2.circle(frame, (x, y), 5, (255, 255, 255), -1)
+        if c.isDebug():
+            cv2.circle(frame, (x, y), 5, (255, 255, 255), -1)
 
 
     else:
         x, y = m.line_intersection(line1, line2)
-        cent = [x, y]
+        boundCent = [x, y]
 
-        cv2.line(frame, (points[0][0], points[0][1]), (points[3][0], points[3][1]), (255, 0, 255), 2)
-        # cv2.circle(frame, (int(x), int(y)), 5, (0, 255, 0), -1)
-        cv2.circle(frame, (points[0][0], points[0][1]), 5, (255, 0, 0), -1)
-        # cv2.circle(frame, (points[1][0], points[1][1]), 5, (0, 255, 0), -1)
-        # cv2.circle(frame, (points[2][0], points[2][1]), 5, (0, 0, 255), -1)
-        cv2.circle(frame, (points[3][0], points[3][1]), 5, (255, 255, 255), -1)
+        if c.isDebug():
+            cv2.line(frame, (points[0][0], points[0][1]), (points[3][0], points[3][1]), (255, 0, 255), 2)
+            cv2.circle(frame, (points[0][0], points[0][1]), 5, (255, 0, 0), -1)
+            cv2.circle(frame, (points[3][0], points[3][1]), 5, (255, 255, 255), -1)
 
-    # If system is in debug mode, print and display all of this data.  Otherwise, don't
-    # in order to keep loop times as low as possible
-    if c.isDebug():
-        if c.getDebug() is 1 or c.getDebug() is 3:
-            pass
-            # Out of range, red center point
-            # cv2.circle(frame, (int(x), int(y)), 5, (0, 0, 255), -1)
-        if c.getDebug() > 1:
-            pass
-    # This catch will occur when no fitting contours are found in the image
+    return topPoint, bottomPoint, boundCent, area, boundTilt
 
-    return top, bottom, cent, size, tilt
 
 # Method for 2 visible rectangles.  Accepts two contour parameters.
 def handleTwoRectangles(contour1, contour2):
@@ -135,7 +119,7 @@ def handleTwoRectangles(contour1, contour2):
         x, y = m.line_intersection([top1, bottom2], [top2, bottom1])
         cv2.circle(frame, (int(x), int(y)), 5, (0, 255, 255), -1)
     else:
-        x = (cent1[0] + cent2[0])/2
+        x = (cent1[0] + cent2[0]) / 2
         y = (cent1[1] + cent2[1]) / 2
         cv2.circle(frame, (int(x), int(y)), 5, (0, 255, 255), -1)
     pass
@@ -161,8 +145,6 @@ if __name__ == '__main__':
 
         # Read a frame from the camera
         ret, frame = cap.read()
-        #frame = cv2.imread("images/cornersnap.jpg")
-        #cv2.imwrite("images/" + str(time.time()) + ".jpg", frame)
 
         # Convert the frame to HSV Colorspace for filtering
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -173,7 +155,6 @@ if __name__ == '__main__':
         # Find contours in the mask image and save to the contours array
         unpack, contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-
         # Iterate through the contours array, and remove anything that doesn't pass the size threshold
         bigArrays = []
         for cnt in contours:
@@ -181,31 +162,27 @@ if __name__ == '__main__':
                 bigArrays.append(cnt)
         contours = bigArrays
 
-        # Try-Catch loop here to handle instances where no rectangles are found.
-        # In this case, the system is told not to move
-
         # Sort the arrays by size, and then take the largest array.
         # This solves any sub-selections, or large static in the image.
-
         contoursSorted = sorted(contours, key=lambda contourArea: cv2.contourArea(contourArea))
         contoursSorted.reverse()
         contours = contoursSorted
 
         if len(contours) is 0:
             pass
-            #Return information telling the system not to move on regard of the lack of rectangles
+            # Return information telling the system not to move on regard of the lack of rectangles
             # Return <0,0>
         elif len(contours) is 1:
-            #Feed the handle method the largest contour
+            # Feed the handle method the largest contour
             top, bottom, cent, size, tilt = handleOneRectangle(contours[0])
         else:
-            #Feed the handle method the two largest contours
-            handleTwoRectangles(contours[0],contours[1])
+            # Feed the handle method the two largest contours
+            handleTwoRectangles(contours[0], contours[1])
+
         # If in debug mode, show the image.  If not, keep this disabled, as it slows down the program
         # significantly
         if c.isDebug():
             cv2.imshow("frame", frame)
-
 
         # Mandatory break statement that will trigger a clean shutdown of the program upon the ESC key being
         # pressed.  Using this method to stop the program is recommended since OpenCV leaves windows hanging and
@@ -213,4 +190,3 @@ if __name__ == '__main__':
         k = cv2.waitKey(5) & 0xFF
         if k == 27:
             break
-
