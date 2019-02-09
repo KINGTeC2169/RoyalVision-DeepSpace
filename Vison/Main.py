@@ -1,3 +1,4 @@
+import time
 from typing import List, Any
 
 import cv2
@@ -10,9 +11,9 @@ from enum import Enum
 
 #Enum for tilt that clear up need for multiple booleans
 class Tilt(Enum):
-    LEFT = 1
-    RIGHT = 2
-    STRAIGHT = 3
+    LEFT = "Left"
+    RIGHT = "Right"
+    STRAIGHT = "Straight"
 
 
 # Method for 1 visible rectangle.  Accepts 1 contour parameter.
@@ -108,7 +109,8 @@ def calculateRectangle(contour):
     return topPoint, bottomPoint, boundCent, area, boundTilt
 
 
-def handleOneRectangle():
+def handleOneRectangle(contour):
+    cv2.drawContours(frame, contour, -1, (0, 0, 255), 3)
     pass
 
 # Method for 2 visible rectangles.  Accepts two contour parameters.
@@ -116,35 +118,43 @@ def handleTwoRectangles(contour1, contour2):
     top1, bottom1, cent1, size1, tilt1 = calculateRectangle(contour1)
     top2, bottom2, cent2, size2, tilt2 = calculateRectangle(contour2)
 
-    rectangles = [contour1, contour2]
+    font = cv2.FONT_HERSHEY_PLAIN
+    # cv2.putText(frame, tilt1.value, (int(cent1[0]), int(cent1[1])), font,2.0, (255,255,255), lineType=16)
+    # cv2.putText(frame, tilt2.value, (int(cent2[0]), int(cent2[1])), font, 2.0, (255, 255, 255), lineType=16)
+    # cv2.putText(frame, str(int((frame.shape[1]/2)-abs(cent1[0]))), (int(cent1[0]), int(cent1[1]) + 30), font,2.0, (255,255,255), lineType=16)
+    # cv2.putText(frame, str(int((frame.shape[1]/2)-abs(cent2[0]))), (int(cent2[0]), int(cent2[1]) + 30), font, 2.0, (255, 255, 255), lineType=16)
 
-    if tilt1 is Tilt.LEFT and cent1[0] > frame.shape[1] or tilt1 is Tilt.RIGHT and cent1[0] < frame.shape[1] \
-            or tilt2 is Tilt.LEFT and cent2[0] > frame.shape[1] or tilt2 is Tilt.RIGHT and cent2[0] < frame.shape[1]:
-            print("Opposing sides!")
+    if ((tilt1 is Tilt.RIGHT and tilt2 is Tilt.LEFT) and (cent1[0] < cent2[0])) or \
+            ((tilt1 is Tilt.LEFT and tilt2 is Tilt.RIGHT) and (cent1[0] > cent2[0])):
             if size1 != size2:
-                if cent1[0] > cent2[0]:
-                    #One Rectangle Calculations on Rectangle 1
-                    pass
+                if abs((frame.shape[1]/2)-abs(cent1[0])) < abs((frame.shape[1]/2)-abs(cent2[0])) :
+                    # One Rectangle Calculations on Rectangle 1
+                    handleOneRectangle(contour1)
                 else:
-                    # One Rectangle Calculations on Rectangle2
-                    pass
+                    # One Rectangle Calculations on Rectangle 2
+                    handleOneRectangle(contour2)
             else:
                 if size1 > size2:
-                    #One Rectangle Calculations on Rectangle1
-                    pass
+                    # One Rectangle Calculations on Rectangle 1
+                    handleOneRectangle(contour1)
                 else:
-                    #One Rectangle Calculations on Rectangle2
-                    pass
+                    # One Rectangle Calculations on Rectangle 2
+                    handleOneRectangle(contour2)
     else:
 
-        if tilt1 is not Tilt.STRAIGHT and tilt2 is not Tilt.STRAIGHT:
-            x, y = m.line_intersection([top1, bottom2], [top2, bottom1])
-            cv2.circle(frame, (int(x), int(y)), 5, (0, 255, 255), -1)
-        else:
-            x = (cent1[0] + cent2[0]) / 2
-            y = (cent1[1] + cent2[1]) / 2
-            cv2.circle(frame, (int(x), int(y)), 5, (0, 255, 255), -1)
+        try:
 
+            if tilt1 is not Tilt.STRAIGHT and tilt2 is not Tilt.STRAIGHT:
+                x, y = m.line_intersection([top1, bottom2], [top2, bottom1])
+                cv2.circle(frame, (int(x), int(y)), 5, (0, 255, 255), -1)
+            else:
+                x = (cent1[0] + cent2[0]) / 2
+                y = (cent1[1] + cent2[1]) / 2
+                cv2.circle(frame, (int(x), int(y)), 5, (0, 255, 255), -1)
+
+        except:
+            print("Rectangle is Not Correct")
+            cv2.imwrite("images/"+str(time.time()) + ".jpg", frame)
 
 if __name__ == '__main__':
 
@@ -196,7 +206,7 @@ if __name__ == '__main__':
         elif len(contours) is 1:
             # Feed the handle method the largest contour
             top, bottom, cent, size, tilt = calculateRectangle(contours[0])
-            handleOneRectangle()
+            handleOneRectangle(contours[0])
         else:
             # Feed the handle method the two largest contours
             handleTwoRectangles(contours[0], contours[1])
