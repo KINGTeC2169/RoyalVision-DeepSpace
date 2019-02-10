@@ -5,7 +5,7 @@ from Constants import Constants
 
 c = Constants()
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 
 def nothing(x):
     pass
@@ -60,7 +60,17 @@ while True:
 
     filtered = result.copy()
 
-    contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    res, contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+
+    font = cv2.FONT_HERSHEY_PLAIN
+    for contour in contours:
+        try:
+            M = cv2.moments(contour)
+            x = int(M["m10"] / M["m00"])
+            y = int(M["m01"] / M["m00"])
+            cv2.putText(frame, str(cv2.contourArea(contour)), (x, y), font, 2.0, (255,255,255), lineType=16)
+        except ZeroDivisionError:
+            pass
     cv2.drawContours(result, contours, -1, (0, 255, 0), 3)
 
     images = np.hstack((frame, filtered, result))

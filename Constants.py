@@ -1,7 +1,12 @@
+import threading
+
 import numpy as np
 import csv
 
 class Constants:
+
+    xLock = threading.Lock()
+    x = 0
 
     lowArray = np.array([])
     highArray = np.array([])
