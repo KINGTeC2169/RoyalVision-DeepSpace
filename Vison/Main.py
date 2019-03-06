@@ -1,6 +1,9 @@
+import socket
+import sys
 from typing import List, Any
 
 import cv2
+import numpy
 import numpy as np
 
 from Constants import Constants
@@ -201,10 +204,25 @@ if __name__ == '__main__':
     c.readValues()
 
     # Create VideoCapture object to grab frames from the USB Camera as color matrices
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
     client = Client(2, "Thread", 1)
 
     client.start()
+
+    sock = socket.socket()
+
+    # Set those constants for easy access
+    TCP_IP = '127.0.0.1'
+
+    # Grab the port number from the command line
+    TCP_PORT = int(sys.argv[1])
+
+    # Connect to the socket with the previous information
+    print("Connecting to Socket")
+    sock.connect((TCP_IP, TCP_PORT))
+
+    # Enable instant reconnection and disable timeout system
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     while True:
         # Read a frame from the camera
@@ -217,7 +235,7 @@ if __name__ == '__main__':
         mask = cv2.inRange(hsv, c.lowArray, c.highArray)
 
         # Find contours in the mask image and save to the contours array
-        unpack, contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         # Iterate through the contours array, and remove anything that doesn't pass the size threshold
         bigArrays = []
@@ -235,6 +253,27 @@ if __name__ == '__main__':
         yaw = getYaw(contours)
         Constants.x = ((yaw-frame.shape[1]/2)/(frame.shape[1]/2))
         cv2.circle(frame, (int(yaw), int(480/2)), 15, (0, 255, 255), thickness=2)
+
+        # C R O N C H   that image down to half size
+        newX, newY = frame.shape[1] * .5, frame.shape[0] * .5
+        frame = cv2.resize(frame, (int(newX), int(newY)))
+
+        # C R O N C H   that image down to extremely compressed JPEG
+        encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 7]
+        result, imgencode = cv2.imencode('.jpg', frame, encode_param)
+
+        # Encode that JPEG string into a NumPy array for compatibility on the other side
+        data = numpy.array(imgencode)
+
+        # Turn NumPy array into a string so we can ship er' on over the information superhighway
+        stringData = data.tostring()
+
+        # Send the size of the data for efficient unpacking
+        sock.send(str(len(stringData)).ljust(16).encode())
+
+        # Might as well send the actual data while we're sending things
+        sock.send(stringData)
+
         # If in debug mode, show the image.  If not, keep this disabled, as it slows down the program
         # significantly
         if c.isDebug():
