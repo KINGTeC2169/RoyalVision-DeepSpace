@@ -7,8 +7,8 @@ import numpy
 import numpy as np
 
 from Constants import Constants
-from Vison.Client.Client import Client
-from Vison.Client.MathHandler import MathHandler
+from Vision.Client.Client import Client
+from Vision.Client.MathHandler import MathHandler
 
 from enum import Enum
 
