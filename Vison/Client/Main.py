@@ -7,8 +7,8 @@ import numpy
 import numpy as np
 
 from Constants import Constants
-from Vison.Client import Client
-from Vison.MathHandler import MathHandler
+from Vison.Client.Client import Client
+from Vison.Client.MathHandler import MathHandler
 
 from enum import Enum
 
@@ -215,11 +215,23 @@ if __name__ == '__main__':
     TCP_IP = '127.0.0.1'
 
     # Grab the port number from the command line
-    TCP_PORT = int(sys.argv[1])
+    try:
+        TCP_PORT = int(sys.argv[1])
+    except IndexError:
+        print("Epic Sad: Expected a port number as a command line argument")
+        sys.exit(1)
+    except ValueError:
+        print("Epic Sad: Port number is not an integer")
+        sys.exit(1)
+
 
     # Connect to the socket with the previous information
     print("Connecting to Socket")
-    sock.connect((TCP_IP, TCP_PORT))
+    try:
+        sock.connect((TCP_IP, TCP_PORT))
+    except ConnectionRefusedError:
+        print("Epic Sad: Make sure to run the server and disable your firewall")
+        sys.exit(1)
 
     # Enable instant reconnection and disable timeout system
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
