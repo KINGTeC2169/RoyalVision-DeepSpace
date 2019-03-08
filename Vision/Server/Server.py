@@ -10,16 +10,16 @@ def startStreamer():
     # Create and start the camera threads
     # These threads cannot die.  They now only need to be started once.
 
-    # Get the number of cameras from the command line
+    # Get number of sockets from command line
     try:
-        num_cameras = int(sys.argv[1])
+        num_sockets = int(sys.argv[1])
     except IndexError:
-        num_cameras = 4
+        num_sockets = 4
     except ValueError:
         print("Epic Sad: First command line argument is not an integer")
         sys.exit(1)
 
-    # Get the starting port from the command line
+    # Get starting port from command line
     try:
         starting_port = int(sys.argv[2])
     except IndexError:
@@ -29,7 +29,7 @@ def startStreamer():
         sys.exit(1)
 
     # Start the camera servers
-    for i in range(num_cameras):
+    for i in range(num_sockets):
         CameraServer(starting_port + i).start()
 
 

@@ -192,6 +192,22 @@ def getYaw(contours):
 
 if __name__ == '__main__':
 
+    # Get camera port from command line
+    try:
+        camera_port = int(sys.argv[2])
+    except IndexError:
+        camera_port = 0
+    except ValueError:
+        print("Epic Sad: Second command line argument should be an integer")
+
+    # Get compression rate from command line
+    try:
+        compression_rate = int(sys.argv[3])
+    except IndexError:
+        compression_rate = 7
+    except ValueError:
+        print("Epic Sad: Third command line argument should be an integer")
+
     # Create instances of MathHandler class and Constants classes.  These will keep all of the numbers
     # and calculations of of this class so that this space can be dedicated to the pipeline.  Functions and
     # constants will, as a result, have their own dedicated space for editing and optimization in their respective
@@ -204,7 +220,7 @@ if __name__ == '__main__':
     c.readValues()
 
     # Create VideoCapture object to grab frames from the USB Camera as color matrices
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(camera_port)
     client = Client(2, "Thread", 1)
 
     client.start()
@@ -218,19 +234,17 @@ if __name__ == '__main__':
     try:
         TCP_PORT = int(sys.argv[1])
     except IndexError:
-        print("Epic Sad: Expected a port number as a command line argument")
-        sys.exit(1)
+        TCP_PORT = 1111
     except ValueError:
         print("Epic Sad: Port number is not an integer")
         sys.exit(1)
-
 
     # Connect to the socket with the previous information
     print("Connecting to Socket")
     try:
         sock.connect((TCP_IP, TCP_PORT))
     except ConnectionRefusedError:
-        print("Epic Sad: Make sure to run the server and disable your firewall")
+        print("Epic Sad: Make sure to run the server first and disable your firewall")
         sys.exit(1)
 
     # Enable instant reconnection and disable timeout system
@@ -271,7 +285,7 @@ if __name__ == '__main__':
         frame = cv2.resize(frame, (int(newX), int(newY)))
 
         # C R O N C H   that image down to extremely compressed JPEG
-        encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 7]
+        encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), compression_rate]
         result, imgencode = cv2.imencode('.jpg', frame, encode_param)
 
         # Encode that JPEG string into a NumPy array for compatibility on the other side
