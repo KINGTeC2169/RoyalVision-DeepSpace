@@ -1,3 +1,4 @@
+import sys
 import traceback
 
 import numpy
@@ -20,7 +21,7 @@ def recvall(sock, count):
 class CameraServer(Thread):
 
     # Define the IP for easy changing
-    TCP_IP = '127.0.0.1'
+    TCP_IP = ''
 
     def attemptConnection(self):
 

@@ -1,7 +1,5 @@
 import sys
 
-import cv2
-
 from CameraServer import CameraServer
 
 # Method that starts the ServerFolde system
@@ -23,7 +21,7 @@ def startStreamer():
     try:
         starting_port = int(sys.argv[2])
     except IndexError:
-        starting_port = 1111
+        starting_port = 5801
     except ValueError:
         print("Epic Sad: Second command line argument is not an integer")
         sys.exit(1)

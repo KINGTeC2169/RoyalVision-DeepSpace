@@ -7,8 +7,8 @@ import numpy
 import numpy as np
 
 from Constants import Constants
-from Vision.Client.Client import Client
-from Vision.Client.MathHandler import MathHandler
+from Client import Client
+from MathHandler import MathHandler
 
 from enum import Enum
 
@@ -217,7 +217,10 @@ if __name__ == '__main__':
 
     # Read the values of the constants, since they may have changed as the tuning system may have changed the
     # CSV that stores the values shared by the programs
-    c.readValues()
+    try:
+        c.readValues()
+    except FileNotFoundError:
+        print("Epic Sad: Change your working directory to RoyalVision-DeepSpace")
 
     # Create VideoCapture object to grab frames from the USB Camera as color matrices
     cap = cv2.VideoCapture(camera_port)
@@ -234,7 +237,7 @@ if __name__ == '__main__':
     try:
         TCP_PORT = int(sys.argv[1])
     except IndexError:
-        TCP_PORT = 1111
+        TCP_PORT = 5801
     except ValueError:
         print("Epic Sad: Port number is not an integer")
         sys.exit(1)
