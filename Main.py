@@ -1,5 +1,5 @@
 import socket
-import sys
+from sys import argv
 from typing import List, Any
 
 import cv2
@@ -12,7 +12,8 @@ from MathHandler import MathHandler
 
 from enum import Enum
 
-#Enum for tilt that clear up need for multiple booleans
+
+# Enum for tilt that clear up need for multiple booleans
 class Tilt(Enum):
     LEFT = "Left"
     RIGHT = "Right"
@@ -21,7 +22,6 @@ class Tilt(Enum):
 
 # Method for 1 visible rectangle.  Accepts 1 contour parameter.
 def calculateRectangle(contour):
-
     # Set up our return variables
     area = cv2.contourArea(contour)
 
@@ -115,7 +115,6 @@ def calculateRectangle(contour):
     return bottomPoint, topPoint, boundCent, area, boundTilt, diff
 
 
-
 def handleOneRectangle(contour):
     top1, bottom1, cent1, size1, tilt1, lenTilt1 = calculateRectangle(contour)
     if tilt1 is Tilt.LEFT:
@@ -128,6 +127,7 @@ def handleOneRectangle(contour):
         return top1[0] - (4 * lenTilt1 / 5.5)
     return frame.shape[1]
 
+
 # Method for 2 visible rectangles.  Accepts two contour parameters.
 def handleTwoRectangles(contour1, contour2):
     top1, bottom1, cent1, size1, tilt1, lenTilt1 = calculateRectangle(contour1)
@@ -135,27 +135,29 @@ def handleTwoRectangles(contour1, contour2):
 
     if c.getDebug():
         font = cv2.FONT_HERSHEY_PLAIN
-        cv2.putText(frame, tilt1.value, (int(cent1[0]), int(cent1[1])), font,2.0, (255,255,255), lineType=16)
+        cv2.putText(frame, tilt1.value, (int(cent1[0]), int(cent1[1])), font, 2.0, (255, 255, 255), lineType=16)
         cv2.putText(frame, tilt2.value, (int(cent2[0]), int(cent2[1])), font, 2.0, (255, 255, 255), lineType=16)
-        cv2.putText(frame, str(int((frame.shape[1]/2)-abs(cent1[0]))), (int(cent1[0]), int(cent1[1]) + 30), font,2.0, (255,255,255), lineType=16)
-        cv2.putText(frame, str(int((frame.shape[1]/2)-abs(cent2[0]))), (int(cent2[0]), int(cent2[1]) + 30), font, 2.0, (255, 255, 255), lineType=16)
+        cv2.putText(frame, str(int((frame.shape[1] / 2) - abs(cent1[0]))), (int(cent1[0]), int(cent1[1]) + 30), font,
+                    2.0, (255, 255, 255), lineType=16)
+        cv2.putText(frame, str(int((frame.shape[1] / 2) - abs(cent2[0]))), (int(cent2[0]), int(cent2[1]) + 30), font,
+                    2.0, (255, 255, 255), lineType=16)
 
     if ((tilt1 is Tilt.RIGHT and tilt2 is Tilt.LEFT) and (cent1[0] < cent2[0])) or \
             ((tilt1 is Tilt.LEFT and tilt2 is Tilt.RIGHT) and (cent1[0] > cent2[0])):
-            if size1 != size2:
-                if abs((frame.shape[1]/2)-abs(cent1[0])) < abs((frame.shape[1]/2)-abs(cent2[0])) :
-                    # One Rectangle Calculations on Rectangle 1
-                    return handleOneRectangle(contour1)
-                else:
-                    # One Rectangle Calculations on Rectangle 2
-                    return handleOneRectangle(contour2)
+        if size1 != size2:
+            if abs((frame.shape[1] / 2) - abs(cent1[0])) < abs((frame.shape[1] / 2) - abs(cent2[0])):
+                # One Rectangle Calculations on Rectangle 1
+                return handleOneRectangle(contour1)
             else:
-                if size1 > size2:
-                    # One Rectangle Calculations on Rectangle 1
-                    return handleOneRectangle(contour1)
-                else:
-                    # One Rectangle Calculations on Rectangle 2
-                    return handleOneRectangle(contour2)
+                # One Rectangle Calculations on Rectangle 2
+                return handleOneRectangle(contour2)
+        else:
+            if size1 > size2:
+                # One Rectangle Calculations on Rectangle 1
+                return handleOneRectangle(contour1)
+            else:
+                # One Rectangle Calculations on Rectangle 2
+                return handleOneRectangle(contour2)
     else:
 
         try:
@@ -177,6 +179,7 @@ def handleTwoRectangles(contour1, contour2):
             pass
     return 0
 
+
 def getYaw(contours):
     if len(contours) is 0:
         return frame.shape[1] / 2
@@ -190,23 +193,28 @@ def getYaw(contours):
         # Feed the handle method the two largest contours
         return handleTwoRectangles(contours[0], contours[1])
 
+
+# Set global variables
+TCP_IP = 'DS2169.local'
+TCP_PORT = 5801
+camera_port = 0
+compression_rate = 7
+
+# Load command line arguments
+for arg in argv[1:]:
+    arg = arg.split('=')
+    if arg[0] == 'ip':
+        TCP_IP = arg[1]
+    elif arg[0] == 'port' or arg[0] == 'p':
+        TPC_PORT = int(arg[1])
+    elif arg[0] == 'camera' or arg[0] == 'cam':
+        camera_port = int(arg[1])
+    elif arg[0] == 'compression' or arg[0] == 'cr':
+        compression_rate = int(arg[1])
+    else:
+        print("Invalid Argument:", arg[0])
+
 if __name__ == '__main__':
-
-    # Get camera port from command line
-    try:
-        camera_port = int(sys.argv[2])
-    except IndexError:
-        camera_port = 0
-    except ValueError:
-        print("Epic Sad: Second command line argument should be an integer")
-
-    # Get compression rate from command line
-    try:
-        compression_rate = int(sys.argv[3])
-    except IndexError:
-        compression_rate = 7
-    except ValueError:
-        print("Epic Sad: Third command line argument should be an integer")
 
     # Create instances of MathHandler class and Constants classes.  These will keep all of the numbers
     # and calculations of of this class so that this space can be dedicated to the pipeline.  Functions and
@@ -217,10 +225,7 @@ if __name__ == '__main__':
 
     # Read the values of the constants, since they may have changed as the tuning system may have changed the
     # CSV that stores the values shared by the programs
-    try:
-        c.readValues()
-    except FileNotFoundError:
-        print("Epic Sad: Change your working directory to RoyalVision-DeepSpace")
+    c.readValues()
 
     # Create VideoCapture object to grab frames from the USB Camera as color matrices
     cap = cv2.VideoCapture(camera_port)
@@ -230,25 +235,9 @@ if __name__ == '__main__':
 
     sock = socket.socket()
 
-    # Set those constants for easy access
-    TCP_IP = '127.0.0.1'
-
-    # Grab the port number from the command line
-    try:
-        TCP_PORT = int(sys.argv[1])
-    except IndexError:
-        TCP_PORT = 5801
-    except ValueError:
-        print("Epic Sad: Port number is not an integer")
-        sys.exit(1)
-
     # Connect to the socket with the previous information
     print("Connecting to Socket")
-    try:
-        sock.connect((TCP_IP, TCP_PORT))
-    except ConnectionRefusedError:
-        print("Epic Sad: Make sure to run the server first and disable your firewall")
-        sys.exit(1)
+    sock.connect((TCP_IP, TCP_PORT))
 
     # Enable instant reconnection and disable timeout system
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -280,8 +269,8 @@ if __name__ == '__main__':
         contours = contoursSorted
 
         yaw = getYaw(contours)
-        Constants.x = ((yaw-frame.shape[1]/2)/(frame.shape[1]/2))
-        cv2.circle(frame, (int(yaw), int(480/2)), 15, (0, 255, 255), thickness=2)
+        Constants.x = ((yaw - frame.shape[1] / 2) / (frame.shape[1] / 2))
+        cv2.circle(frame, (int(yaw), int(480 / 2)), 15, (0, 255, 255), thickness=2)
 
         # C R O N C H   that image down to half size
         newX, newY = frame.shape[1] * .5, frame.shape[0] * .5
